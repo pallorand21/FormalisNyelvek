@@ -4,48 +4,51 @@ import argparse
 class dfafeladat(Problem):
 
     def initialize_parser(self, parser: argparse.ArgumentParser):
-        parser.add_argument('--check', type=str, help='szo ellenorzes')
+        parser.add_argument('--check', type=str, help='word check')
 
     def is_chosen_problem(self, args):
         return bool(args.check)
 
     def run(self, args):
-        be = args.input
-        ki = args.output
-        szavak = args.check
+        input = args.input
+        out = args.output
+        words = args.check
 
-        teszszavak = szavak.split(",") if szavak else []
-        kezdo, veg, atmenet = self.dfa_beolvasas(be)
+        testwords = words.split(",") if words else []
+        start, end, transition = self.dfa_read(input)
 
-        eredmenyek = []
-        for szo in teszszavak:
-            eredmenyek.append(self.ellenorzes(szo, kezdo, veg, atmenet))
+        results = []
+        for word in testwords:
+            results.append(self.check(word, start, end, transition))
 
-        with open(ki, "w") as f:
-            for eredmeny in eredmenyek:
-                f.write(eredmeny + "\n")
+        with open(out, "w") as f:
+            for res in results:
+                f.write(res + "\n")
 
-    def dfa_beolvasas(self, filenev):
-        with open(filenev, "r") as f:
-            sorok = [sor.strip() for sor in f if sor.strip()]
+    def dfa_read(self, filename):
+        with open(filename, "r") as f:
+            #nem ures sorok beolvasasa
+            rows = [row.strip() for row in f if row.strip()]
 
-        kezdo = sorok[2]
-        veg = set(sorok[3].split())
+        
+        start = rows[2]
+        end = set(rows[3].split())
 
-        atmenet = {}
-        for sor in sorok[4:]:
-            reszek = sor.split()
-            if len(reszek) == 3:
-                honnan, betu, hova = reszek
-                atmenet[(honnan, betu)] = hova
-        return kezdo, veg, atmenet
+        transition = {}
+        for sor in rows[4:]:
+            parts = sor.split()
+            if len(parts) == 3:
+                fromm, word, where = parts
+                transition[(fromm, word)] = where
+        return start, end, transition
 
-    def ellenorzes(self, szo, kezdo, veg, atmenet):
-        aktualis = kezdo
-        for betu in szo:
-            kulcs = (aktualis, betu)
-            if kulcs in atmenet:
-                aktualis = atmenet[kulcs]
+    def check(self, word, start, end, transition):
+        #startallapot
+        actually = start
+        for wordd in word:
+            key = (actually, word)
+            if key in transition:
+                actually = transition[key]
             else:
                 return "NEM"
-        return "IGEN" if aktualis in veg else "NEM"
+        return "IGEN" if actually in end else "NEM"
